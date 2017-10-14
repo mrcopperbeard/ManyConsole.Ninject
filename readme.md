@@ -1,10 +1,10 @@
 ### ManyConsole
 
-Available on Nuget: http://nuget.org/List/Packages/ManyConsole
+Forked from https://github.com/fschwiet/ManyConsole
 
-Thanks to Daniel González for providing some additional documentation: http://dgondotnet.blogspot.dk/2013/08/my-last-console-application-manyconsole.html
+Available on Nuget: https://www.nuget.org/packages/ManyConsole.Ninject
 
-NDesk.Options is a great library for processing command-line parameters.  ManyConsole extends NDesk.Options to allow building console applications that support separate commands.
+NDesk.Options is a great library for processing command-line parameters.  ManyConsole extends NDesk.Options to allow building console applications that support separate commands. And this fork makes ManyConsole up to use DI through Ninject.
 
 If you are not familiar with NDesk.Options, you should start by using that: http://www.ndesk.org/Options.  Add ManyConsole when you feel the urge to differentiate commands (you'll still need the NDesk.Options usage).
 
@@ -13,6 +13,7 @@ ManyConsole provides a console interface for the user to list available commands
 To use ManyConsole:
 
 - Create a command line app referencing the ManyConsole nuget.
+- Create some Command classes implement ```IConsoleCommand``` or ```IConsoleModeCommand``` (you can just inherit from ```ConsoleCommand``` class and overload abstract methods). 
 - Have Program.Main call ConsoleCommandDispatcher (see https://github.com/fschwiet/ManyConsole/blob/master/SampleConsole/Program.cs)
   - You can use ConsoleCommandDispatcher to find commands in an assembly, or not.
 - To add a command to your console application, inherit from ConsoleCommand.
@@ -25,25 +26,41 @@ To use ManyConsole:
 Run this from NuGet Package Management Console:
 
 ```posh
-Install-Package ManyConsole
+Install-Package ManyConsole.Ninject
 ```
 
 Drop this in to automatically load all of the commands that we'll create next:
 
 ```csharp
+internal class SampleModule : NinjectModule
+{
+  public override void Load()
+  {
+    ...
+    // Bind some command you need to IConsoleCommand or IConsoleModeCommand.
+    Bind<IConsoleCommand>().To<SimpleConsoleCommand>();
+    Bind<IConsoleModeCommand>().To<SimpleConsoleModeCommand>();
+    ...
+  }
+}
+
 public class Program
 {
-    public static int Main(string[] args)
-    {
-        var commands = GetCommands();
+    static void Main(string[] args)
+        {
+          // Get Ninject kernel with ManyConsoleModule and your command bindings.
+          var kernel = new StandardKernel(
+            new ManyConsoleModule(),
+            new SampleModule());
 
-        return ConsoleCommandDispatcher.DispatchCommand(commands, args, Console.Out);
-    }
+          // get dispatcher from DI kernel.
+          var dispatcher = kernel.Get<IConsoleCommandDispatcher>();
 
-    public static IEnumerable<ConsoleCommand> GetCommands()
-    {
-        return ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(Program));
-    }
+          var commands = dispatcher.FindCommands();
+
+          // then run them.
+          var result = dispatcher.DispatchCommand(commands, args, Console.Out);
+        }
 }
 ```
 
