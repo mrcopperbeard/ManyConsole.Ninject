@@ -61,7 +61,7 @@ namespace SampleConsole.Command
 
 		private void PrintEmlFile(string filepath)
 		{
-			var mail = Sasa.Net.Mail.Message.ParseMailMessage(File.ReadAllText(filepath));
+			var mail = Sasa.Net.Mail.Message.Parse(File.ReadAllText(filepath));
 
 			Console.WriteLine("SUBJECT:\t{0}", mail.Subject);
 			Console.WriteLine("FROM:\t{0}", mail.From);
@@ -70,7 +70,7 @@ namespace SampleConsole.Command
 			{
 				Console.WriteLine("TO:\t{0}", to);
 			}
-            
+
 			var headersPresent = mail.Headers.Keys.OfType<string>().Select(s => s.ToLower());
 
 			foreach (var header in HeadersToPrint)
